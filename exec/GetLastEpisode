@@ -1,0 +1,71 @@
+#!/usr/bin/perl
+$verbose = 0;
+$config_file = "/etc/GetLastEpisode.txt";
+$done_file   = "/home/pi/Seagate/torrents/done.txt";
+$torrent_path = "/home/pi/Seagate/torrents";
+$SendMail = 1;
+$MailAddress = 'francesco.gonnella@gmail.com';
+$MailSubject = 'Raspberry Pi is downloading torrent';
+$MailText = 'Torrent file:';
+$eztv = 'https://eztv.unblocked.work/ezrss.xml';
+#$eztv = 'https://eztv.immunicity.work/ezrss.xml';
+
+die "The script needs curl executable to be in /usr/bin, please install it\n" unless (-e "/usr/bin/curl");
+
+open CONF, $config_file or die "[fatal] Couldn't open $config_file: $!\n";
+@keywords = <CONF>;
+close CONF;
+
+open DONE, $done_file or die "[fatal] Couldn't open $done_file: $!\n";
+@done = <DONE>;
+close DONE;
+
+$page = `/usr/bin/curl --globoff -k $eztv`;
+$page =~ s/\n+//g;
+if ($page =~ /^.*?<item>(.+)<\/item>.*$/ ) {
+    print $1 if $verbose;
+    print "\n\n=================\n\n" if $verbose;
+    @items = split /<\/item>\s*<item>/, $1;
+} else {
+    die "[fatal] Problem with page: $eztv\n";
+}
+for (@items) {
+    if (/<title>(.*)<\/title>.*<torrent:magnetURI><!\[CDATA\[(.*)\]\]><\/torrent:magnetURI>.*<torrent:fileName>(.*)<\/torrent:fileName>/) {
+        ($title, $file, $url) = ($1, $3, $2);
+	print "[debug] Title: $title\nFile: $file\nMAGNET: $url\n\n" if $verbose;
+	$done = 0;
+	for $d (@done) {
+	    chomp $d;
+	    print "[debug] Done = $d, File = $file\n" if $verbose;
+	    if ($file eq $d) {
+		$done = 1;
+		last;
+	    }
+	}
+	if ($done == 0) {
+	    for (@keywords) {
+		@kw = split /\s+/;
+		$matches = 0;
+		for $w (@kw) {
+		    $matches++ if ("$title" =~ qr/$w/i);
+		    print "[debug] Comparing $title with $w...\n" if $verbose;
+		}
+		print "[debug] matches = $matches, keywords = {{$#kw + 1}}\n" if $verbose;
+		
+		if ($matches == ($#kw+1)) {
+		    print "[info] Downloading torrent: $file...\n";
+		    open DONE, ">>$done_file" or die "Couldn't open $done_file: $!\n";
+		    print DONE "$file\n";
+		    close DONE;
+		    #$torrent =  `/usr/bin/curl --globoff -k $url -o $torrent_path/$file.torrent`;
+		    print "MAGNET: ", $url, "\n";
+		    `/usr/bin/qbittorrent-nox \"$url\"`;
+		    $command = "echo \"Subject: $MailSubject \n$MailText $file\"  | sendmail $MailAddress";
+		    print "[debug] Executing : $command ...\n" if $verbose ;
+		    system($command) if ($SendMail == 1) ;
+		    last;
+		}
+	    }
+	}
+    }
+}
