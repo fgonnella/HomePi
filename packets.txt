@@ -1,0 +1,1 @@
+git qbittorrent-nox emacs samba python-pip python-dev build-essential python-imaging ssmtp mailutils
