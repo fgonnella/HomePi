@@ -1,0 +1,10 @@
+[Unit]
+Description=lcd monitor
+
+[Service]
+User=pi
+ExecStart=/usr/local/bin/lcd.py
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

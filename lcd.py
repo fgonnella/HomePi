@@ -48,7 +48,7 @@ font = ImageFont.load_default()
 # font = ImageFont.truetype('Minecraftia.ttf', 8)
 
 while True:
-        file = open("lcd.txt", "r")
+        file = open("/etc/lcd.txt", "r")
         lines=file.readlines()
         file.close()
         #Clear screen
