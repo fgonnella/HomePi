@@ -7,6 +7,7 @@ $SendMail = 1;
 $MailAddress = 'francesco.gonnella@gmail.com';
 $MailSubject = 'Raspberry Pi is downloading torrent';
 $MailText = 'Torrent file:';
+$proxyportal = 'https://proxyportal.org/eztv';
 $eztv = 'https://eztv.unblocked.work/ezrss.xml';
 #$eztv = 'https://eztv.immunicity.work/ezrss.xml';
 
@@ -19,16 +20,28 @@ close CONF;
 open DONE, $done_file or die "[fatal] Couldn't open $done_file: $!\n";
 @done = <DONE>;
 close DONE;
-
-$page = `/usr/bin/curl --globoff -k $eztv`;
-$page =~ s/\n+//g;
-if ($page =~ /^.*?<item>(.+)<\/item>.*$/ ) {
-    print $1 if $verbose;
-    print "\n\n=================\n\n" if $verbose;
-    @items = split /<\/item>\s*<item>/, $1;
-} else {
-    die "[fatal] Problem with page: $eztv\n";
+$sites = `/usr/bin/curl --globoff -k $proxyportal`;
+while ($sites =~ m/\"(https:\/\/eztv.*?\..+?\..+?)\"/g) {
+    push @eztv, "$1/ezrss.xml";
 }
+
+for $ez (@eztv) {
+    $page = `/usr/bin/curl --globoff -k $ez`;
+    $page =~ s/\n+//g;
+    if ($page =~ /^.*?<item>(.+)<\/item>.*$/ ) {
+	print $1 if $verbose;
+	print "\n\n=================\n\n" if $verbose;
+	@items = split /<\/item>\s*<item>/, $1;
+	last;
+    } else {
+	print "[warning] Problem with page: $ez\n";
+	$s++;
+    }
+}
+if ($s == ($#eztv+1)) {
+    die "[fatal] Problem with all pages\n";
+}
+
 for (@items) {
     if (/<title>(.*)<\/title>.*<torrent:magnetURI><!\[CDATA\[(.*)\]\]><\/torrent:magnetURI>.*<torrent:fileName>(.*)<\/torrent:fileName>/) {
         ($title, $file, $url) = ($1, $3, $2);
