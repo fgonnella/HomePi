@@ -21,7 +21,7 @@ open DONE, $done_file or die "[fatal] Couldn't open $done_file: $!\n";
 @done = <DONE>;
 close DONE;
 $sites = `/usr/bin/curl --globoff -k $proxyportal`;
-while ($sites =~ m/\"(https:\/\/eztv.*?\..+?\..+?)\"/g) {
+while ($sites =~ /\"(https:\/\/eztv.*?\..+?\..+?)\"/g) {
     push @eztv, "$1/ezrss.xml";
 }
 
@@ -50,7 +50,7 @@ for (@items) {
 	for $d (@done) {
 	    chomp $d;
 	    print "[debug] Done = $d, File = $file\n" if $verbose;
-	    if ($file eq $d) {
+	    if ($file eq $d) { #here should just look for episode and season
 		$done = 1;
 		last;
 	    }
@@ -73,7 +73,8 @@ for (@items) {
 		    #$torrent =  `/usr/bin/curl --globoff -k $url -o $torrent_path/$file.torrent`;
 		    print "MAGNET: ", $url, "\n";
 		    `/usr/bin/qbittorrent-nox \"$url\"`;
-		    $command = "echo \"Subject: $MailSubject \n$MailText $file\"  | sendmail $MailAddress";
+		    #$command = "echo \"Subject: $MailSubject \n$MailText $file\"  | sendmail $MailAddress";
+		    $command = "echo $MailText $file | mail -s $MailSubject $MailAddress";
 		    print "[debug] Executing : $command ...\n" if $verbose ;
 		    system($command) if ($SendMail == 1) ;
 		    last;
