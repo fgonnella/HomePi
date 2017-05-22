@@ -3,6 +3,9 @@ use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use File::Copy;
 
+$PiAddress = "192.168.0.16";
+$PiPort = "8080";
+   
 open CONF, "/etc/organise.conf";
 @lines = <CONF>;
 close CONF;
@@ -50,6 +53,8 @@ for my $fil(@filez) {
 
 chdir $dir;
 &organize(".");
+
+system "wget \"$PiAddress\:$PiPort\/jsonrpc\?request=\{\%22jsonrpc\%22:\%222.0\%22,\%22method\%22:\%22VideoLibrary.Scan\%22\}\" -t1 >/dev/null 2>&1";
 
 print "Done! Beware, take care!\n";
 
@@ -113,12 +118,14 @@ sub organize {
 		print BOLD "Moving: $folder/$file", " -> ", $path{$ext}, "\n";
 		move ("$folder/$file",  $path{$ext}) or die "Move failed: $!";
 	    }
-	}
-	    
-	    
+	}	    
+	   
 
 	
     
     }
     
 }
+
+
+    
