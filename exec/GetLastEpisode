@@ -74,7 +74,7 @@ for (@items) {
 		    print "MAGNET: ", $url, "\n";
 		    `/usr/bin/qbittorrent-nox \"$url\"`;
 		    #$command = "echo \"Subject: $MailSubject \n$MailText $file\"  | sendmail $MailAddress";
-		    $command = "echo $MailText $file | mail -s $MailSubject $MailAddress";
+		    $command = "echo $MailText $file | mail -s \"$MailSubject\" $MailAddress";
 		    print "[debug] Executing : $command ...\n" if $verbose ;
 		    system($command) if ($SendMail == 1) ;
 		    last;
